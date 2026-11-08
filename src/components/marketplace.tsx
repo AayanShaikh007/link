@@ -328,6 +328,35 @@ export default function Marketplace() {
             />
           </label>
         )}
+        {demo &&
+          !attachment &&
+          p.developer_id === user &&
+          p.status === "in_progress" && (
+            <Button
+              secondary
+              disabled={busy}
+              onClick={() =>
+                run(
+                  () =>
+                    m.upload(
+                      new File(
+                        [
+                          "FORGE DEMO HANDOVER\nThis is a sample deliverable for testing the commission workflow.\nIt is not commissioned software. Review, request a revision, or approve to simulate the transfer.\n",
+                        ],
+                        "sample-delivery.txt",
+                        { type: "text/plain" },
+                      ),
+                      p.id,
+                      "deliverable",
+                    ),
+                  "Sample deliverable uploaded",
+                )
+              }
+            >
+              <FileText size={16} />
+              Use a sample deliverable
+            </Button>
+          )}
       </>
     );
   }
