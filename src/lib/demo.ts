@@ -10,6 +10,17 @@ import {
   type Snapshot,
   type Asset,
 } from "./domain";
+// Local HTTP previews do not expose crypto.randomUUID. These IDs identify demo records only.
+const demoId = () =>
+  typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
+    : "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) =>
+        (
+          Number(c) ^
+          (crypto.getRandomValues(new Uint8Array(1))[0] &
+            (15 >> (Number(c) / 4)))
+        ).toString(16),
+      );
 const key = "forge-demo-v1";
 export const personas = [
   { id: CUSTOMER, label: "Aayan · Customer" },
@@ -35,7 +46,7 @@ export function demoAction(
   const s = structuredClone(input);
   s.isAdmin = user === ADMIN;
   const now = new Date().toISOString(),
-    uid = () => crypto.randomUUID();
+    uid = () => demoId();
   let result: any = { ok: true };
   const p = s.projects.find((p) => p.id === raw.project_id),
     pay = s.payments.find((x) => x.project_id === raw.project_id);
@@ -217,7 +228,7 @@ export async function demoUpload(
   kind: Asset["kind"],
 ): Promise<Asset> {
   validateFile(file);
-  const id = crypto.randomUUID(),
+  const id = demoId(),
     db = await filesDb();
   await new Promise<void>((resolve, reject) => {
     const tx = db.transaction("files", "readwrite");
