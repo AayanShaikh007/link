@@ -1,6 +1,7 @@
 # Payment design and boundaries
 
 Research checked against Stripe's official documentation on 2026-11-08:
+
 - https://docs.stripe.com/connect/separate-charges-and-transfers
 - https://docs.stripe.com/connect/manual-payouts
 - https://docs.stripe.com/webhooks

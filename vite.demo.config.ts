@@ -1,2 +1,13 @@
-import {defineConfig} from 'vite';import tailwindcss from '@tailwindcss/vite';import path from 'node:path';
-export default defineConfig({plugins:[tailwindcss()],resolve:{alias:{'@':path.resolve(__dirname,'src')}},define:{'process.env.NEXT_PUBLIC_SUPABASE_URL':JSON.stringify(''),'process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY':JSON.stringify('')},build:{outDir:'dist',emptyOutDir:true},server:{host:'0.0.0.0',allowedHosts:['terminal.local']}});
+import { defineConfig } from "vite";
+import tailwindcss from "@tailwindcss/vite";
+import path from "node:path";
+export default defineConfig({
+  plugins: [tailwindcss()],
+  resolve: { alias: { "@": path.resolve(__dirname, "src") } },
+  define: {
+    "process.env.NEXT_PUBLIC_SUPABASE_URL": JSON.stringify(""),
+    "process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY": JSON.stringify(""),
+  },
+  build: { outDir: "dist", emptyOutDir: true },
+  server: { host: "0.0.0.0", allowedHosts: ["terminal.local"] },
+});
