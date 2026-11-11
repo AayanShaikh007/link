@@ -36,12 +36,15 @@ import {
 import { useMarketplace } from "@/lib/use-marketplace";
 import {
   categories,
+  criteriaLines,
+  legacyCriteria,
   money,
   human,
   initials,
   type Project,
   type Asset,
 } from "@/lib/domain";
+import { taskTemplates, budgetSuggestions } from "@/lib/task-templates";
 import { personas } from "@/lib/demo";
 import { Button, Field, Badge, Modal } from "./ui";
 const go = (s: string) => {
@@ -54,6 +57,10 @@ const icons: Record<string, typeof Code2> = {
   Automation: Zap,
   "Scripts & utilities": Terminal,
   "Business software": BriefcaseBusiness,
+  "Smart home": Zap,
+  "AI workflows": Sparkles,
+  "Discord & bots": MessageSquare,
+  "Tech troubleshooting": Terminal,
 };
 export default function Marketplace() {
   const m = useMarketplace(),
@@ -88,7 +95,12 @@ export default function Marketplace() {
     active = mine.filter(
       (p) => !["open", "completed", "refunded"].includes(p.status),
     );
+  const [templateId, setTemplateId] = useState("");
+  const [budget, setBudget] = useState("50");
+  const [reviewed, setReviewed] = useState(false);
+  const template = taskTemplates.find((t) => t.id === templateId);
   function open(s: string, id = "") {
+    setReviewed(false);
     setSelected(id);
     setError("");
     setModal(s);
@@ -428,6 +440,9 @@ export default function Marketplace() {
                 <>
                   <h3>The brief</h3>
                   <p className="preserve">{p.description}</p>
+                  <CompletionCriteria
+                    value={p.acceptance_criteria || legacyCriteria}
+                  />
                   <div className="tags">
                     {p.skills.map((s) => (
                       <span key={s}>{s}</span>
@@ -866,14 +881,15 @@ export default function Marketplace() {
                     THE MARKETPLACE FOR YOUR NEXT IDEA
                   </div>
                   <h1>
-                    Software that doesn’t
+                    Small tech problems.
                     <br />
-                    exist. <em>Yet.</em>
+                    <em>Solved by people.</em>
                   </h1>
                   <p>
-                    A game mod. A time-saving script. That one plugin you wish
-                    existed. Post your idea and find a developer to make it
-                    real.
+                    A smart-home routine. A Discord bot. A script that needs
+                    fixing. Find a skilled person for a clear, quick technical
+                    task — designed around $15–$100 jobs, with room for bigger
+                    ideas.
                   </p>
                   <div className="actions">
                     <Button onClick={() => requireUser(() => go("new"))}>
@@ -995,8 +1011,8 @@ export default function Marketplace() {
             <>
               <Heading
                 eyebrow="FIND YOUR NEXT BUILD"
-                title="Small projects. Real possibilities."
-                text="Put your skills to work on something someone actually needs."
+                title="Quick jobs. Real skills."
+                text="Help someone with a small technical problem. Clear scope, fixed price, one delivery."
               >
                 <Button onClick={() => requireUser(() => go("new"))}>
                   <Plus size={17} />
@@ -1017,180 +1033,274 @@ export default function Marketplace() {
                   <Button onClick={() => open("auth")}>Sign in</Button>
                 </Empty>
               ) : (
-                <div className="form-grid">
-                  <form
-                    className="panel request-form"
-                    onSubmit={(e) =>
-                      submit(e, async (f) => {
-                        const result = await m.act("project", {
-                          title: f.get("title"),
-                          description: f.get("description"),
-                          category: f.get("category"),
-                          budget: f.get("budget"),
-                          deadline: f.get("deadline"),
-                          skills: String(f.get("skills"))
-                            .split(",")
-                            .map((s) => s.trim())
-                            .filter(Boolean),
-                          resale_eligible: f.get("resale") === "on",
-                          customer_distribution_consent:
-                            f.get("consent") === "on",
-                        });
-                        const file = f.get("attachment") as File;
-                        if (file?.size) {
-                          try {
-                            await m.upload(file, result.id, "attachment");
-                          } catch {
-                            m.notify(
-                              "Request posted; attachment failed. Reopen the request to retry.",
-                            );
-                          }
-                        }
-                        go("project/" + result.id);
-                        m.notify("Your request is live");
-                      })
-                    }
+                <>
+                  <section
+                    className="template-picker"
+                    aria-label="Task templates"
                   >
-                    <Field
-                      label="Give your project a title"
-                      hint="Be specific about what the finished thing should do."
-                    >
-                      <input
-                        name="title"
-                        required
-                        minLength={8}
-                        maxLength={120}
-                        placeholder="e.g. A Blender add-on that batch exports my assets"
-                      />
-                    </Field>
-                    <Field
-                      label="Tell developers about your idea"
-                      hint="Include the problem, expected result, supported versions, and acceptance criteria."
-                    >
-                      <textarea
-                        rows={7}
-                        name="description"
-                        required
-                        minLength={40}
-                        maxLength={10000}
-                        placeholder="Here’s what I’m trying to do..."
-                      />
-                    </Field>
-                    <div className="form-two">
-                      <Field label="Category">
-                        <select name="category">
-                          {categories.slice(1).map((c) => (
-                            <option key={c}>{c}</option>
-                          ))}
-                        </select>
-                      </Field>
-                      <Field
-                        label="Budget (CAD)"
-                        hint="Your target total · $25–$10,000"
-                      >
-                        <input
-                          type="number"
-                          name="budget"
-                          required
-                          min={25}
-                          max={10000}
-                          placeholder="350"
-                        />
-                      </Field>
-                    </div>
-                    <div className="form-two">
-                      <Field label="Target deadline">
-                        <input
-                          name="deadline"
-                          required
-                          type="date"
-                          min={new Date(Date.now() + 86400000)
-                            .toISOString()
-                            .slice(0, 10)}
-                        />
-                      </Field>
-                      <Field
-                        label="Skills / tools"
-                        hint="Up to 8, separated by commas"
-                      >
-                        <input
-                          name="skills"
-                          placeholder="Python, Blender, API"
-                        />
-                      </Field>
-                    </div>
-                    <Field
-                      label="Supporting file (optional)"
-                      hint="Private to you and your selected developer · 10 MB max"
-                    >
-                      <input
-                        type="file"
-                        name="attachment"
-                        accept=".zip,.pdf,.txt,.md,.png,.jpg,.jpeg,.webp"
-                      />
-                    </Field>
-                    <div className="check-box">
-                      <label>
-                        <input name="resale" type="checkbox" />
-                        <span>
-                          Consider this project for future resale
-                          <small>
-                            No automatic listings or royalty payouts.
-                          </small>
-                        </span>
-                      </label>
-                      <label>
-                        <input name="consent" type="checkbox" />
-                        <span>
-                          I’m open to commercial distribution
-                          <small>
-                            Your developer must agree independently.
-                          </small>
-                        </span>
-                      </label>
-                    </div>
-                    <ErrorText text={error} />
-                    <div className="form-footer">
-                      <small>
-                        Only request work you have the right to commission.
-                      </small>
-                      <Button disabled={busy} type="submit">
-                        Publish request
-                        <ArrowUpRight size={17} />
-                      </Button>
-                    </div>
-                  </form>
-                  <aside className="brief-tips">
-                    <span>✳</span>
-                    <h2>
-                      Good briefs get
-                      <br />
-                      great proposals.
-                    </h2>
-                    <p>
-                      You don’t need to know the technical solution. Start with
-                      the problem.
-                    </p>
-                    {[
-                      "Explain what you use today",
-                      "Describe your ideal result",
-                      "Share examples or references",
-                      "Be realistic about timing",
-                    ].map((t) => (
-                      <div key={t}>
-                        <Check size={16} />
-                        {t}
+                    <div className="section-heading">
+                      <div>
+                        <h2>Start with a small task.</h2>
+                        <p className="muted">
+                          Pick a starting point, then edit the details.
+                          Switching templates replaces this draft.
+                        </p>
                       </div>
-                    ))}
-                    <hr />
-                    <ShieldCheck size={23} />
-                    <h3>You choose when it’s ready.</h3>
-                    <p>
-                      Review the delivery and request revisions before approval.
-                      This beta uses simulated or Stripe test payments.
-                    </p>
-                  </aside>
-                </div>
+                    </div>
+                    <div className="template-grid">
+                      {taskTemplates.map((t) => (
+                        <button
+                          key={t.id}
+                          type="button"
+                          aria-pressed={templateId === t.id}
+                          className={templateId === t.id ? "chosen" : ""}
+                          onClick={() => {
+                            setTemplateId(t.id);
+                            setBudget(String(t.budget));
+                            setError("");
+                          }}
+                        >
+                          <span>{t.category}</span>
+                          <strong>{t.title}</strong>
+                          <small>
+                            {money(t.budget)} CAD example · {t.delivery_days}{" "}
+                            {t.delivery_days === 1 ? "day" : "days"}
+                          </small>
+                        </button>
+                      ))}
+                    </div>
+                    {templateId && (
+                      <button
+                        className="text-link"
+                        onClick={() => {
+                          setTemplateId("");
+                          setBudget("50");
+                        }}
+                      >
+                        Start with a blank request instead
+                      </button>
+                    )}
+                  </section>
+                  <div className="form-grid">
+                    <form
+                      key={templateId || "blank"}
+                      className="panel request-form"
+                      onSubmit={(e) =>
+                        submit(e, async (f) => {
+                          const result = await m.act("project", {
+                            title: f.get("title"),
+                            description: f.get("description"),
+                            acceptance_criteria: f.get("acceptance_criteria"),
+                            category: f.get("category"),
+                            budget: f.get("budget"),
+                            deadline: f.get("deadline"),
+                            skills: String(f.get("skills"))
+                              .split(",")
+                              .map((s) => s.trim())
+                              .filter(Boolean),
+                            resale_eligible: f.get("resale") === "on",
+                            customer_distribution_consent:
+                              f.get("consent") === "on",
+                          });
+                          const file = f.get("attachment") as File;
+                          if (file?.size) {
+                            try {
+                              await m.upload(file, result.id, "attachment");
+                            } catch {
+                              m.notify(
+                                "Request posted; attachment failed. Reopen the request to retry.",
+                              );
+                            }
+                          }
+                          go("project/" + result.id);
+                          m.notify("Your request is live");
+                        })
+                      }
+                    >
+                      <Field
+                        label="Give your project a title"
+                        hint="Be specific about what the finished thing should do."
+                      >
+                        <input
+                          name="title"
+                          required
+                          minLength={8}
+                          maxLength={120}
+                          defaultValue={template?.title}
+                          placeholder="e.g. Set up a welcome message for my Discord server"
+                        />
+                      </Field>
+                      <Field
+                        label="Tell developers about your idea"
+                        hint="Describe the problem, tools or versions, and what is included. Keep passwords and tokens out of the brief."
+                      >
+                        <textarea
+                          rows={5}
+                          defaultValue={template?.description}
+                          name="description"
+                          required
+                          minLength={40}
+                          maxLength={10000}
+                          placeholder="Here’s what I’m trying to do..."
+                        />
+                      </Field>
+                      <Field
+                        label="How will you know it’s done?"
+                        hint="Write one testable outcome per line. Both sides will use these completion criteria at delivery."
+                      >
+                        <textarea
+                          name="acceptance_criteria"
+                          defaultValue={template?.acceptance_criteria}
+                          required
+                          minLength={20}
+                          maxLength={4000}
+                          rows={4}
+                          placeholder={
+                            "The routine works on the agreed devices.\nI can turn it off using the provided instructions.\nI receive a short setup guide."
+                          }
+                        />
+                      </Field>
+                      <div className="form-two">
+                        <Field label="Category">
+                          <select
+                            name="category"
+                            defaultValue={template?.category || "Smart home"}
+                          >
+                            {categories.slice(1).map((c) => (
+                              <option key={c}>{c}</option>
+                            ))}
+                          </select>
+                        </Field>
+                        <Field
+                          label="Budget (CAD)"
+                          hint="Designed for $15–$100 tasks. Larger requests welcome, up to $10,000."
+                        >
+                          <input
+                            type="number"
+                            name="budget"
+                            required
+                            min={15}
+                            max={10000}
+                            value={budget}
+                            onChange={(e) => setBudget(e.target.value)}
+                            placeholder="50"
+                          />
+                          <div className="budget-presets">
+                            {budgetSuggestions.map((n) => (
+                              <button
+                                type="button"
+                                key={n}
+                                aria-pressed={Number(budget) === n}
+                                onClick={() => setBudget(String(n))}
+                              >
+                                {money(n)}
+                              </button>
+                            ))}
+                          </div>
+                        </Field>
+                      </div>
+                      <div className="form-two">
+                        <Field label="Target deadline">
+                          <input
+                            name="deadline"
+                            defaultValue={new Date(
+                              Date.now() +
+                                (template?.delivery_days || 3) * 86400000,
+                            )
+                              .toISOString()
+                              .slice(0, 10)}
+                            required
+                            type="date"
+                            min={new Date(Date.now() + 86400000)
+                              .toISOString()
+                              .slice(0, 10)}
+                          />
+                        </Field>
+                        <Field
+                          label="Skills / tools"
+                          hint="Up to 8, separated by commas"
+                        >
+                          <input
+                            name="skills"
+                            defaultValue={template?.skills.join(", ")}
+                            placeholder="Python, Home Assistant, Discord"
+                          />
+                        </Field>
+                      </div>
+                      <Field
+                        label="Supporting file (optional)"
+                        hint="Private to you and your selected developer · 10 MB max"
+                      >
+                        <input
+                          type="file"
+                          name="attachment"
+                          accept=".zip,.pdf,.txt,.md,.png,.jpg,.jpeg,.webp"
+                        />
+                      </Field>
+                      <div className="check-box">
+                        <label>
+                          <input name="resale" type="checkbox" />
+                          <span>
+                            Consider this project for future resale
+                            <small>
+                              No automatic listings or royalty payouts.
+                            </small>
+                          </span>
+                        </label>
+                        <label>
+                          <input name="consent" type="checkbox" />
+                          <span>
+                            I’m open to commercial distribution
+                            <small>
+                              Your developer must agree independently.
+                            </small>
+                          </span>
+                        </label>
+                      </div>
+                      <ErrorText text={error} />
+                      <div className="form-footer">
+                        <small>
+                          Only request work you have the right to commission.
+                        </small>
+                        <Button disabled={busy} type="submit">
+                          Publish request
+                          <ArrowUpRight size={17} />
+                        </Button>
+                      </div>
+                    </form>
+                    <aside className="brief-tips">
+                      <span>✳</span>
+                      <h2>
+                        Good briefs get
+                        <br />
+                        great proposals.
+                      </h2>
+                      <p>
+                        You don’t need to know the technical solution. Start
+                        with the problem.
+                      </p>
+                      {[
+                        "Explain what you use today",
+                        "Describe your ideal result",
+                        "Share examples or references",
+                        "Be realistic about timing",
+                      ].map((t) => (
+                        <div key={t}>
+                          <Check size={16} />
+                          {t}
+                        </div>
+                      ))}
+                      <hr />
+                      <ShieldCheck size={23} />
+                      <h3>You choose when it’s ready.</h3>
+                      <p>
+                        Review the delivery and request revisions before
+                        approval. This beta uses simulated or Stripe test
+                        payments.
+                      </p>
+                    </aside>
+                  </div>
+                </>
               )}
             </>
           ) : page === "project" && p ? (
@@ -1219,6 +1329,9 @@ export default function Marketplace() {
                     <hr />
                     <h3>The project</h3>
                     <p className="preserve">{p.description}</p>
+                    <CompletionCriteria
+                      value={p.acceptance_criteria || legacyCriteria}
+                    />
                     <h3>Skills & tools</h3>
                     <div className="tags">
                       {p.skills.map((s) => (
@@ -1834,7 +1947,7 @@ export default function Marketplace() {
                   <input
                     name="amount"
                     type="number"
-                    min={25}
+                    min={15}
                     max={10000}
                     required
                     placeholder="250"
@@ -1963,14 +2076,32 @@ export default function Marketplace() {
                   ? "This transfer is simulated. No money moves."
                   : "The transfer goes to the developer’s Stripe account. Bank payout timing is separate."}
               </p>
+              <CompletionCriteria
+                value={
+                  data.projects.find((p) => p.id === selected)
+                    ?.acceptance_criteria || legacyCriteria
+                }
+              />
+              <label className="approval-check">
+                <input
+                  type="checkbox"
+                  checked={reviewed}
+                  onChange={(e) => setReviewed(e.target.checked)}
+                />
+                <span>
+                  I tested the agreed completion criteria and accept this
+                  delivery.
+                </span>
+              </label>
               <ErrorText text={error} />
               <Button
-                disabled={busy}
+                disabled={busy || !reviewed}
                 onClick={() =>
                   run(async () => {
                     await m.act("workspace", {
                       project_id: selected,
                       action: "approve",
+                      acceptance_confirmed: reviewed,
                     });
                     setModal("");
                   }, "Delivery approved")
@@ -2194,4 +2325,20 @@ function ErrorText({ text }: { text: string }) {
       {text}
     </p>
   ) : null;
+}
+
+function CompletionCriteria({ value }: { value: string }) {
+  return (
+    <section className="completion-criteria">
+      <h3>How we’ll check it’s done</h3>
+      <ul>
+        {criteriaLines(value).map((line, i) => (
+          <li key={i}>
+            <Check size={15} />
+            <span>{line}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
 }

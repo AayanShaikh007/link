@@ -2668,3 +2668,134 @@ main {
     animation: none !important;
   }
 }
+
+.template-picker {
+  margin: 0 0 28px;
+}
+.template-picker h2 {
+  font-size: 24px;
+}
+.template-picker .section-heading {
+  margin-bottom: 16px;
+}
+.template-picker .muted {
+  margin: 8px 0 0;
+}
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.template-grid > button {
+  text-align: left;
+  padding: 15px;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+.template-grid > button:hover,
+.template-grid > button.chosen {
+  border-color: #7c9d6c;
+  background: #edf4e5;
+}
+.template-grid span {
+  display: block;
+  font-size: 9px;
+  color: #6a815a;
+  margin-bottom: 7px;
+}
+.template-grid strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #3f5435;
+}
+.template-grid small {
+  display: block;
+  font-size: 9px;
+  color: #6c7f60;
+  margin-top: 10px;
+}
+.budget-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.budget-presets button {
+  border: 1px solid #dbe4d2;
+  border-radius: 4px;
+  padding: 4px 9px;
+  font-size: 10px;
+  background: #f9fbf5;
+  color: #617b50;
+}
+.budget-presets button[aria-pressed="true"] {
+  background: #dfead5;
+  border-color: #8aa476;
+}
+.completion-criteria {
+  margin: 22px 0;
+  padding: 18px;
+  background: #f4f8ee;
+  border: 1px solid #e1e9d7;
+  border-radius: 7px;
+}
+.completion-criteria h3 {
+  font-size: 13px;
+  color: #526f40;
+  margin: 0 0 12px;
+}
+.completion-criteria ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.completion-criteria li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: #637858;
+  font-size: 11px;
+  line-height: 1.8;
+  padding: 4px 0;
+  overflow-wrap: anywhere;
+}
+.completion-criteria li svg {
+  margin-top: 3px;
+  color: #7b9d65;
+}
+.approval-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 12px;
+  color: #4f6b3d;
+  margin: 18px 0;
+}
+.approval-check input {
+  margin-top: 4px;
+}
+@media (max-width: 1000px) {
+  .template-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 520px) {
+  .template-grid {
+    gap: 8px;
+  }
+  .template-grid > button {
+    padding: 12px;
+  }
+  .template-grid strong {
+    font-size: 11px;
+  }
+  .completion-criteria {
+    padding: 14px;
+  }
+}
