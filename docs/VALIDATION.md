@@ -14,3 +14,5 @@ This is a deployable beta implementation with a working demo, not a claim that e
 ## November 11 checks
 
 Coverage now includes $15 request/bid boundaries, all eight templates, acceptance-criteria validation, preservation of existing demo records, SQL backfilling of legacy requests, the expanded category allowlist, approval rejection without acknowledgement, and a successful $15 contract whose repeated transfer recording counts completion once. Hosted Supabase/Stripe integration still requires service credentials.
+
+The November 11 Next.js production build and static demo build passed. The updated private demo was deployed successfully. A fresh browser walkthrough of the new UI could not be completed: the managed preview failed during Vite startup because network-interface enumeration was denied, and the deployed preview requires ChatGPT sign-in in the test browser. No application security or hosting audience was changed to bypass that gate. The earlier browser walkthrough above describes the previous version; the new criteria acknowledgement is currently verified by domain and PostgreSQL tests.
