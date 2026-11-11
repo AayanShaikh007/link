@@ -1,6 +1,7 @@
 import { freshSeed, CUSTOMER, DEVELOPER, ADMIN } from "./seed";
 import {
   projectSchema,
+  legacyCriteria,
   bidSchema,
   profileSchema,
   messageSchema,
@@ -30,7 +31,14 @@ export const personas = [
 export function readDemo(): Snapshot {
   try {
     const x = localStorage.getItem(key);
-    if (x) return JSON.parse(x);
+    if (x) {
+      const saved: Snapshot = JSON.parse(x);
+      saved.projects = saved.projects.map((p) => ({
+        ...p,
+        acceptance_criteria: p.acceptance_criteria || legacyCriteria,
+      }));
+      return saved;
+    }
   } catch {}
   return freshSeed();
 }
@@ -149,6 +157,10 @@ export function demoAction(
         p.status = "delivered";
       }
       if (op === "approve") {
+        if (raw.acceptance_confirmed !== true)
+          throw new Error(
+            "Confirm you tested the agreed completion criteria before approval.",
+          );
         p.status = "completed";
         if (pay) pay.status = "transferred";
         s.profiles.find((x) => x.id === p.developer_id)!.completed++;

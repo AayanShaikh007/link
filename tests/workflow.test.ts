@@ -59,11 +59,23 @@ test("complete commission includes selection, funding, messaging, revisions and 
     "in_progress",
   );
   w.act(DEVELOPER, "workspace", { project_id: pid, action: "deliver" });
-  w.act(CUSTOMER, "workspace", { project_id: pid, action: "approve" });
+  assert.throws(
+    () => w.act(CUSTOMER, "workspace", { project_id: pid, action: "approve" }),
+    /Confirm you tested/,
+  );
+  w.act(CUSTOMER, "workspace", {
+    project_id: pid,
+    action: "approve",
+    acceptance_confirmed: true,
+  });
   assert.equal(w.state.projects.find((p) => p.id === pid)?.status, "completed");
   assert.equal(w.state.payments[0].status, "transferred");
   assert.throws(() =>
-    w.act(CUSTOMER, "workspace", { project_id: pid, action: "approve" }),
+    w.act(CUSTOMER, "workspace", {
+      project_id: pid,
+      action: "approve",
+      acceptance_confirmed: true,
+    }),
   );
 });
 test("unrelated users cannot access workspaces or customer-only actions", () => {
@@ -96,7 +108,11 @@ test("disputes pause approval and only administrator can refund", () => {
     detail: "The agreed feature scope was not delivered.",
   });
   assert.throws(() =>
-    w.act(CUSTOMER, "workspace", { project_id: pid, action: "approve" }),
+    w.act(CUSTOMER, "workspace", {
+      project_id: pid,
+      action: "approve",
+      acceptance_confirmed: true,
+    }),
   );
   assert.throws(() =>
     w.act(DEVELOPER, "review", {
@@ -159,4 +175,79 @@ test("validation rejects executable, oversized, empty and malformed requests", (
     false,
   );
   assert.match(human("2026-12-15"), /15/);
+});
+
+test("micro-task templates produce valid $15–$100 requests and retain larger budgets", async () => {
+  const { taskTemplates } = await import("../src/lib/task-templates");
+  const { bidSchema } = await import("../src/lib/domain");
+  for (const t of taskTemplates) {
+    assert.ok(t.budget >= 15 && t.budget <= 100);
+    const request = {
+      ...t,
+      deadline: new Date(Date.now() + 86400000 * 7).toISOString().slice(0, 10),
+      resale_eligible: false,
+      customer_distribution_consent: false,
+    };
+    assert.equal(projectSchema.safeParse(request).success, true, t.title);
+    assert.equal(
+      projectSchema.safeParse({ ...request, budget: 15 }).success,
+      true,
+    );
+    assert.equal(
+      projectSchema.safeParse({ ...request, budget: 500 }).success,
+      true,
+    );
+    assert.equal(
+      projectSchema.safeParse({ ...request, budget: 14 }).success,
+      false,
+    );
+    assert.equal(
+      projectSchema.safeParse({ ...request, acceptance_criteria: "" }).success,
+      false,
+    );
+    assert.equal(
+      projectSchema.safeParse({ ...request, acceptance_criteria: undefined })
+        .success,
+      false,
+    );
+  }
+  assert.equal(
+    bidSchema.safeParse({
+      project_id: "task",
+      amount: 15,
+      days: 1,
+      proposal: "I will configure the bot and provide setup instructions.",
+    }).success,
+    true,
+  );
+  assert.equal(
+    bidSchema.safeParse({
+      project_id: "task",
+      amount: 14,
+      days: 1,
+      proposal: "I will configure the bot and provide setup instructions.",
+    }).success,
+    false,
+  );
+});
+
+test("existing browser demo records get legacy criteria without losing state", async () => {
+  const { readDemo } = await import("../src/lib/demo");
+  const snapshot = freshSeed();
+  snapshot.projects[0].status = "completed";
+  delete (snapshot.projects[0] as any).acceptance_criteria;
+  const previous = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+  Object.defineProperty(globalThis, "localStorage", {
+    value: { getItem: () => JSON.stringify(snapshot) },
+    configurable: true,
+  });
+  try {
+    const migrated = readDemo();
+    assert.equal(migrated.projects[0].status, "completed");
+    assert.match(migrated.projects[0].acceptance_criteria, /Legacy request/);
+    assert.equal(migrated.bids.length, snapshot.bids.length);
+  } finally {
+    if (previous) Object.defineProperty(globalThis, "localStorage", previous);
+    else Reflect.deleteProperty(globalThis, "localStorage");
+  }
 });

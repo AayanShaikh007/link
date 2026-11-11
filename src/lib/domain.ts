@@ -6,6 +6,10 @@ export const categories = [
   "Automation",
   "Scripts & utilities",
   "Business software",
+  "Smart home",
+  "AI workflows",
+  "Discord & bots",
+  "Tech troubleshooting",
 ] as const;
 export type Status =
   | "open"
@@ -30,6 +34,7 @@ export type Project = {
   developer_id: string | null;
   title: string;
   description: string;
+  acceptance_criteria: string;
   category: string;
   budget: number;
   deadline: string;
@@ -107,8 +112,16 @@ export const emptySnapshot = (): Snapshot => ({
 export const projectSchema = z.object({
   title: z.string().trim().min(8).max(120),
   description: z.string().trim().min(40).max(10000),
+  acceptance_criteria: z
+    .string()
+    .trim()
+    .min(
+      20,
+      "Describe how you will check the finished work (at least 20 characters)",
+    )
+    .max(4000),
   category: z.enum(categories.slice(1) as [string, ...string[]]),
-  budget: z.coerce.number().int().min(25).max(10000),
+  budget: z.coerce.number().int().min(15).max(10000),
   deadline: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -122,7 +135,7 @@ export const projectSchema = z.object({
 });
 export const bidSchema = z.object({
   project_id: z.string().min(1),
-  amount: z.coerce.number().int().min(25).max(10000),
+  amount: z.coerce.number().int().min(15).max(10000),
   days: z.coerce.number().int().min(1).max(60),
   proposal: z.string().trim().min(30).max(4000),
 });
@@ -184,3 +197,11 @@ export function validateFile(f: { name: string; size: number }) {
   )
     throw new Error("Use PDF, text, Markdown, images, or ZIP archives.");
 }
+
+export const legacyCriteria =
+  "Legacy request: confirm completion criteria in project messages before funding.";
+export const criteriaLines = (value: string) =>
+  value
+    .split("\n")
+    .map((s) => s.replace(/^[-*•]\s*/, "").trim())
+    .filter(Boolean);

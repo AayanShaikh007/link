@@ -115,12 +115,10 @@ async function handler(req: NextRequest) {
         kind = z.enum(["attachment", "deliverable"]).parse(form.get("kind")),
         path = `${pid}/${user.id}/${crypto.randomUUID()}.${file.name.split(".").pop()!.toLowerCase()}`;
       checked(
-        await db.storage
-          .from("project-files")
-          .upload(path, file, {
-            contentType: file.type || "application/octet-stream",
-            upsert: false,
-          }),
+        await db.storage.from("project-files").upload(path, file, {
+          contentType: file.type || "application/octet-stream",
+          upsert: false,
+        }),
       );
       result = checked(
         await db
@@ -167,24 +165,31 @@ async function handler(req: NextRequest) {
         );
       else if (action === "message")
         checked(
-          await db
-            .from("messages")
-            .insert({
-              project_id: id.parse(raw.project_id),
-              sender_id: user.id,
-              body: text(raw.body),
-            }),
+          await db.from("messages").insert({
+            project_id: id.parse(raw.project_id),
+            sender_id: user.id,
+            body: text(raw.body),
+          }),
         );
       else if (action === "workspace") {
         const pid = id.parse(raw.project_id),
           op = z
             .enum(["deliver", "revise", "approve", "dispute", "consent"])
             .parse(raw.action);
+        if (op === "approve" && raw.acceptance_confirmed !== true)
+          throw new Error(
+            "Confirm you tested the agreed completion criteria before approval.",
+          );
         checked(
           await db.rpc("workspace_action", {
             pid,
             action: op,
-            detail: typeof raw.detail === "string" ? raw.detail : "",
+            detail:
+              op === "approve"
+                ? "acceptance-confirmed"
+                : typeof raw.detail === "string"
+                  ? raw.detail
+                  : "",
           }),
         );
         if (op === "approve") {

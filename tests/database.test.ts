@@ -39,9 +39,48 @@ test("actual PostgreSQL migrations enforce RLS, file integrity, funding idempote
       `insert into projects(owner_id,title,description,category,budget,deadline) values('${c}','Local CSV processing tool','A useful local tool that previews and validates CSV files.','Scripts & utilities',200,current_date+30) returning id`,
     );
     const p = (r.rows[0] as any).id;
+    await db.exec("reset role");
+    await db.exec(
+      await readFile(
+        new URL("../supabase/migrations/004_micro_tasks.sql", import.meta.url),
+        "utf8",
+      ),
+    );
+    assert.match(
+      (
+        await db.query<{ acceptance_criteria: string }>(
+          `select acceptance_criteria from projects where id='${p}'`,
+        )
+      ).rows[0].acceptance_criteria,
+      /Legacy request/,
+    );
+    await assert.rejects(() =>
+      asUser(
+        c,
+        `insert into projects(owner_id,title,description,category,budget,deadline) values('${c}','Missing completion criteria','A useful task description that is long enough.','Smart home',15,current_date+7)`,
+      ),
+    );
+    for (const category of [
+      "Smart home",
+      "AI workflows",
+      "Discord & bots",
+      "Tech troubleshooting",
+    ]) {
+      await asUser(
+        c,
+        `insert into projects(owner_id,title,description,acceptance_criteria,category,budget,deadline) values('${c}','Small technical task','A useful task description that is long enough.','The configured routine passes the agreed sample test.','${category}',15,current_date+7)`,
+      );
+    }
+    await assert.rejects(() =>
+      asUser(
+        c,
+        `insert into projects(owner_id,title,description,acceptance_criteria,category,budget,deadline) values('${c}','Too small a budget','A useful task description that is long enough.','The routine passes the agreed sample test.','Smart home',14,current_date+7)`,
+      ),
+    );
+
     r = await asUser(
       d,
-      `insert into bids(project_id,developer_id,amount,days,proposal) values('${p}','${d}',150,3,'I will deliver a useful local tool with tests and documentation.') returning id`,
+      `insert into bids(project_id,developer_id,amount,days,proposal) values('${p}','${d}',15,3,'I will deliver a useful local tool with tests and documentation.') returning id`,
     );
     const b = (r.rows[0] as any).id;
     await assert.rejects(() => asUser(d, `select accept_bid('${b}')`));
@@ -70,11 +109,11 @@ test("actual PostgreSQL migrations enforce RLS, file integrity, funding idempote
     await assert.rejects(() =>
       asUser(
         c,
-        `select record_funding('fake','${p}','cs_test','ch_test',15000)`,
+        `select record_funding('fake','${p}','cs_test','ch_test',1500)`,
       ),
     );
     await db.exec(
-      `reset role;update payments set checkout_session_id='cs_test' where project_id='${p}';select record_funding('evt_1','${p}','cs_test','ch_test',15000);select record_funding('evt_1','${p}','cs_test','ch_test',15000);`,
+      `reset role;update payments set checkout_session_id='cs_test' where project_id='${p}';select record_funding('evt_1','${p}','cs_test','ch_test',1500);select record_funding('evt_1','${p}','cs_test','ch_test',1500);`,
     );
     assert.equal(
       (
@@ -109,6 +148,9 @@ test("actual PostgreSQL migrations enforce RLS, file integrity, funding idempote
       0,
     );
     await asUser(d, `select workspace_action('${p}','deliver','')`);
+    await assert.rejects(() =>
+      asUser(c, `select workspace_action('${p}','approve','')`),
+    );
     await asUser(
       c,
       `select workspace_action('${p}','revise','Please add ISO date support')`,
