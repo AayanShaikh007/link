@@ -14,7 +14,7 @@ Commands: `npm test`, `npm run typecheck`, `npm run build`, `npm run start`, `np
 
 ## Supabase
 
-1. Create a sandbox project. Apply SQL files in `supabase/migrations` in numerical order using the SQL editor or Supabase CLI. The migration creates a private `project-files` bucket with a 10 MB limit.
+1. Create a sandbox project. Apply all SQL files in `supabase/migrations` in numerical order (including `004_micro_tasks.sql`) using the SQL editor or Supabase CLI. The migration creates a private `project-files` bucket with a 10 MB limit.
 2. Enable email/password sign-in. Set the Auth Site URL and allowed redirect origins to the development/production origins. Configure email confirmation and SMTP for deliverability. Signup works without SMTP using Supabase's sandbox limits, but verify confirmation mail delivery before inviting users.
 3. Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and the server-only `SUPABASE_SERVICE_ROLE_KEY`. Never expose the service-role key in a public variable.
 4. Optional: set `SEED_CONFIRM=sandbox-only` and a unique `SEED_PASSWORD` of at least 12 characters in `.env.local`, then run `npm run seed`. It creates sandbox-only sample users and projects. Re-running preserves existing projects and workflow states. It does not create real transactions or fake completed-project counts.
@@ -52,3 +52,11 @@ Uploads go directly to Supabase with short-lived signed upload tokens, so 10 MB 
 ## Before live/public launch
 
 Keep live keys disabled. Complete Stripe's approval of the exact delayed-transfer business model, applicable Canadian legal review, signed IP/licensing/acceptance agreements, privacy policy, refund and inactivity deadlines, fees/taxes, monitoring, rate limits/moderation, email delivery, storage scanning/retention, backup/restore verification, and actual two-account Stripe sandbox testing. See PAYMENTS.md and HANDOFF.md.
+
+## Micro-task upgrade
+
+The updated board supports smart-home setup, AI workflows, Discord/bots, troubleshooting, and the original categories. New requests need explicit completion criteria; suggested budgets run from $15 to $100, while the $10,000 ceiling remains for larger work. Apply migration 004 before deploying the connected app. It preserves existing requests and records a clearly marked legacy criteria reminder instead of inventing customer-agreed requirements. Browser demo records receive the same reminder without deleting their files or payment state. To see the refreshed eight sample tasks in an existing demo session, use the dashboard’s Reset demo action when ready; it replaces demo records.
+
+The request form offers eight editable templates and budget shortcuts. Customers see the criteria in project details, workspaces, and the approval confirmation. Approval requires an explicit acknowledgement through the API and a guarded database transition. This records the customer’s acceptance; it does not independently verify that the software meets the requirements.
+
+A 15% platform fee remains a business hypothesis. This update does not introduce a fee or alter the test-only payment policy.

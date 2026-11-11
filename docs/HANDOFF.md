@@ -15,7 +15,7 @@ The portable hosted demo simulates accounts and payments with browser persistenc
 5. What maximum development/review/inactivity periods and refund policy should the customer/developer agreements use? There is no automatic release timer.
 6. Who will handle disputes, and which verified account UUIDs should be operators?
 7. Should the default IP arrangement be an exclusive customer commission, a developer license, or optional shared commercial rights? Consent flags are intent records, not a legal licensing agreement. No resale storefront or royalties are active.
-8. Which category should the first beta focus on: game mods/plugins or general scripts/automations? All listed categories currently work.
+8. Which community should supply the first beta users? The product now targets $15–$100 remote technical tasks across smart home, AI workflows, Discord/bots, scripts, plugins/mods, and troubleshooting. Larger jobs remain supported.
 
 ## Deliberately deferred
 
@@ -24,3 +24,7 @@ Automated royalties, resale storefront, reviews authored by customers, notificat
 ## Git
 
 Work is committed by milestone. The GitHub repository is https://github.com/AayanShaikh007/link. See GitHub's commit list for the authoritative published history. No environment secrets or generated build output are committed.
+
+## November 11 continuation
+
+Implemented the refined peer-to-peer small-task direction: $15 minimum budgets/bids, eight editable micro-task templates with realistic example budgets, four additional categories, required acceptance criteria, customer delivery-acceptance acknowledgement, legacy-record preservation, and transactional migration tests. Suggested pricing is illustrative, not validated market data. The fee proposal is still 15% and remains unimplemented pending a decision.

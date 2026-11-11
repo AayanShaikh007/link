@@ -186,6 +186,53 @@ test("actual PostgreSQL migrations enforce RLS, file integrity, funding idempote
       ).rows[0].status,
       "refunded",
     );
+    // A separate successful $15 contract verifies the new approval acknowledgement
+    // and that transfer retries do not increment completed work twice.
+    r = await asUser(
+      c,
+      `insert into projects(owner_id,title,description,acceptance_criteria,category,budget,deadline) values('${c}','A small bot configuration','Configure a welcome bot in a test Discord server.','The test member receives one welcome message.','Discord & bots',15,current_date+7) returning id`,
+    );
+    const p2 = (r.rows[0] as any).id;
+    r = await asUser(
+      d,
+      `insert into bids(project_id,developer_id,amount,days,proposal) values('${p2}','${d}',15,1,'I will configure and test a single welcome message.') returning id`,
+    );
+    await asUser(c, `select accept_bid('${(r.rows[0] as any).id}')`);
+    await db.exec(
+      `reset role;update payments set checkout_session_id='cs_two' where project_id='${p2}';select record_funding('evt_two','${p2}','cs_two','ch_two',1500)`,
+    );
+    await asUser(
+      d,
+      `insert into storage.objects(bucket_id,name) values('project-files','${p2}/${d}/handover.txt')`,
+    );
+    await asUser(
+      d,
+      `insert into assets(project_id,uploader_id,name,path,size,kind) values('${p2}','${d}','handover.txt','${p2}/${d}/handover.txt',100,'deliverable')`,
+    );
+    await asUser(d, `select workspace_action('${p2}','deliver','')`);
+    await asUser(
+      c,
+      `select workspace_action('${p2}','approve','acceptance-confirmed')`,
+    );
+    await db.exec(
+      `reset role;select claim_payment_operation('${p2}','transfer');select record_transfer('${p2}','tr_two');select record_transfer('${p2}','tr_two');`,
+    );
+    assert.equal(
+      (
+        await db.query<{ completed: number }>(
+          `select completed from profiles where id='${d}'`,
+        )
+      ).rows[0].completed,
+      1,
+    );
+    assert.equal(
+      (
+        await db.query<{ status: string }>(
+          `select status from projects where id='${p2}'`,
+        )
+      ).rows[0].status,
+      "completed",
+    );
   } finally {
     await db.close();
   }
